@@ -9,6 +9,7 @@ define([
         '../../Core/EventHelper',
         '../../Core/requestAnimationFrame',
         '../../Core/ScreenSpaceEventType',
+        '../../DynamicScene/DataSourceCollection',
         '../../DynamicScene/DataSourceDisplay',
         '../Animation/Animation',
         '../Animation/AnimationViewModel',
@@ -16,6 +17,7 @@ define([
         '../BaseLayerPicker/createDefaultBaseLayers',
         '../CesiumWidget/CesiumWidget',
         '../ClockViewModel',
+        '../DataSourceBrowser/DataSourceBrowser',
         '../FullscreenButton/FullscreenButton',
         '../getElement',
         '../HomeButton/HomeButton',
@@ -32,6 +34,7 @@ define([
         EventHelper,
         requestAnimationFrame,
         ScreenSpaceEventType,
+        DataSourceCollection,
         DataSourceDisplay,
         Animation,
         AnimationViewModel,
@@ -39,6 +42,7 @@ define([
         createDefaultBaseLayers,
         CesiumWidget,
         ClockViewModel,
+        DataSourceBrowser,
         FullscreenButton,
         getElement,
         HomeButton,
@@ -86,6 +90,7 @@ define([
      * @param {Object} [options] Configuration options for the widget.
      * @param {Boolean} [options.animation=true] If set to false, the Animation widget will not be created.
      * @param {Boolean} [options.baseLayerPicker=true] If set to false, the BaseLayerPicker widget will not be created.
+     * @param {Boolean} [options.dataSourceBrowser=true] If set to false, the DataSourceBrowser widget will not be created.
      * @param {Boolean} [options.fullscreenButton=true] If set to false, the FullscreenButton widget will not be created.
      * @param {Boolean} [options.homeButton=true] If set to false, the HomeButton widget will not be created.
      * @param {Boolean} [options.sceneModePicker=true] If set to false, the SceneModePicker widget will not be created.
@@ -189,8 +194,11 @@ Either specify options.imageryProvider instead or set options.baseLayerPicker to
             useDefaultRenderLoop : false
         });
 
+        var dataSourceCollection = new DataSourceCollection();
+        this._dataSourceCollection = dataSourceCollection;
+
         //Data source display
-        var dataSourceDisplay = new DataSourceDisplay(cesiumWidget.scene);
+        var dataSourceDisplay = new DataSourceDisplay(cesiumWidget.scene, dataSourceCollection);
         this._dataSourceDisplay = dataSourceDisplay;
 
         var clock = cesiumWidget.clock;
@@ -288,6 +296,15 @@ Either specify options.imageryProvider instead or set options.baseLayerPicker to
             timeline.container.style.right = 0;
         }
 
+        //DataSourceBrowser
+        var dataSourceBrowser;
+        if (typeof options.dataSourceBrowser === 'undefined' || options.dataSourceBrowser !== false) {
+            var dataSourceBrowserContainer = document.createElement('div');
+            dataSourceBrowserContainer.className = 'cesium-viewer-dataSourceBrowserContainer';
+            viewerContainer.appendChild(dataSourceBrowserContainer);
+            dataSourceBrowser = new DataSourceBrowser(dataSourceBrowserContainer, dataSourceCollection);
+        }
+
         this._container = container;
         this._viewerContainer = viewerContainer;
         this._cesiumWidget = cesiumWidget;
@@ -298,6 +315,7 @@ Either specify options.imageryProvider instead or set options.baseLayerPicker to
         this._animation = animation;
         this._timeline = timeline;
         this._fullscreenButton = fullscreenButton;
+        this._dataSourceBrowser = dataSourceBrowser;
         this._lastWidth = 0;
         this._lastHeight = 0;
         this._useDefaultRenderLoop = undefined;
@@ -398,6 +416,17 @@ Either specify options.imageryProvider instead or set options.baseLayerPicker to
         },
 
         /**
+         * Gets the DataSourceBrowser.
+         * @memberof Viewer
+         * @type {DataSourceBrowser}
+         */
+        dataSourceBrowser : {
+            get : function() {
+                return this._dataSourceBrowser;
+            }
+        },
+
+        /**
          * Gets the display used for {@link DataSource} visualization.
          * @memberof Viewer.prototype
          * @type {DataSourceDisplay}
@@ -415,7 +444,7 @@ Either specify options.imageryProvider instead or set options.baseLayerPicker to
          */
         dataSources : {
             get : function() {
-                return this._dataSourceDisplay.getDataSources();
+                return this._dataSourceCollection;
             }
         },
 
@@ -693,9 +722,16 @@ Either specify options.imageryProvider instead or set options.baseLayerPicker to
             this._fullscreenButton = this._fullscreenButton.destroy();
         }
 
+        if (typeof this._dataSourceBrowser !== 'undefined') {
+            this._viewerContainer.removeChild(this._dataSourceBrowser.container);
+            this._dataSourceBrowser = this._dataSourceBrowser.destroy();
+        }
+
         this._clockViewModel = this._clockViewModel.destroy();
         this._dataSourceDisplay = this._dataSourceDisplay.destroy();
         this._cesiumWidget = this._cesiumWidget.destroy();
+
+        this._dataSourceCollection = this._dataSourceCollection.destroy();
 
         return destroyObject(this);
     };
