@@ -58,14 +58,14 @@ define([
         eventHelper.add(viewer.clock.onTick, updateView);
 
         function trackObject(dynamicObject) {
-            viewer.trackedObject = dynamicObject;
+            if (typeof dynamicObject !== 'undefined' && typeof dynamicObject.position !== 'undefined') {
+                viewer.trackedObject = dynamicObject;
+            }
         }
 
         function pickAndTrackObject(e) {
             var pickedPrimitive = viewer.scene.pick(e.position);
-            if (typeof pickedPrimitive !== 'undefined' &&
-                typeof pickedPrimitive.dynamicObject !== 'undefined' &&
-                typeof pickedPrimitive.dynamicObject.position !== 'undefined') {
+            if (typeof pickedPrimitive !== 'undefined') {
                 trackObject(pickedPrimitive.dynamicObject);
             }
         }
