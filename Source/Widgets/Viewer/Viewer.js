@@ -61,6 +61,10 @@ define([
         viewer._renderLoopRunning = true;
 
         function render() {
+            if (viewer.isDestroyed()) {
+                return;
+            }
+
             try {
                 if (viewer._useDefaultRenderLoop) {
                     viewer.resize();
